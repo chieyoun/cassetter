@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Cassetter</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f5f5f5;
+    }
+
+    h1 {
+      background-color: #0d5024;
+      color: #fff;
+      padding: 20px;
+      text-align: center;
+    }
+
+    form {
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+      width: 300px;
+      margin: 0 auto;
+    }
+
+    label, input, select {
+      display: block;
+      margin: 10px 0;
+    }
+
+    input[type="number"] {
+      width: 50%;
+      padding: 5px;
+    }
+
+    button[type="submit"] {
+      background-color: #0e5b29;
+      color: #fff;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button[type="submit"]:hover {
+      background-color: #0d5024;
+    }
+
+    p {
+      color: #ff0000;
+    }
+
+    h2 {
+      margin-top: 20px;
+    }
+
+    ul {
+      list-style-type: none;
+      padding: 0;
+    }
+
+    li {
+      border: 1px solid #ddd;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 5px;
+      background-color: #fff;
+    }
+
+    iframe.play {
+      margin-top: 20px;
+      display: block;
+      margin: 0 auto;
+    }
+
+    button.play-button {
+      background-color: #0d5024;
+      color: #fff;
+      border: none;
+      padding: 5px 10px;
+      cursor: pointer;
+    }
+
+    button.play-button:hover {
+      background-color: #0d5024;
+    }
+    /* style.css */
+  .modal {
+    border-radius: 5px;
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+  }
+
+  .modal-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: #fff;
+    padding: 20px;
+    border: 1px solid #ccc;
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+    max-width: 80%;
+  }
+
+  .close {
+    color: #0d5024;
+    font-size: 30px;
+    position: absolute;
+    top: 0;
+    right: 0;
+    padding: 10px;
+    cursor: pointer;
+  }
+  .home {
+  text-decoration: none;
+  }
+
+.home h1{
+  margin-top: 0px;
+}
+
+
+  </style>
+</head>
+<body>
+  <a href="/" class="home">
+    <h1>🖭 Cassetter 🖭</h1>
+  </a>
+  
+  <form action="/recom" method="post">
+    <label for="seed_type">유형 선택:</label>
+    <select name="seed_type" id="seed_type" required>    
+      <option value="genre" selected>장르</option>
+      <option value="artist">가수</option>
+      <option value="track">트랙</option>
+    </select>
+
+    <label for="seed_value"  >값 입력:</label>
+    <input type="text" name="seed_value" id="seed_value" placeholder="k-pop" required>
+    
+
+    <label for="seed_limit">개수:</label>
+    <input min="1" type="number" name="seed_limit" id="seed_limit" required>
+
+    <button type="submit" class="play-button">곡 추천</button>
+  </form>
+
+
+  <!-- 모달 창 -->
+  <div id="modal" class="modal">
+    <div class="modal-content">
+      <br>
+      <span class="close" onclick="closeModal()">&times;</span>
+      <iframe id="spotifyIframe" class="play" width="300" height="380" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe>
+      <!-- <button onclick="prevTrack()">&lt;</button>
+      <button onclick="nextTrack()">&gt;</button> -->
+    </div>
+  </div>
+  
+  <% if (typeof error !== 'undefined') { %>
+    <p><%= error %></p>
+  <% } %>
+  
+  <% if (typeof recommendedTracks !== 'undefined') { %>
+    <!-- <h2>추천된 곡:</h2> -->
+    <!-- <iframe src="" class="play" width="300" height="380" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe> -->
+    <ul>
+      <% recommendedTracks.forEach((track, index) => { %>
+        <li>
+          <button onclick="playTrack('<%= track.uri %>')" class="play-button">재생</button>
+          <%= track.name %> by <%= track.artists[0].name %>
+        </li>
+      <% }); %>
+    </ul>
+  <% } %>
+  <script>
+    var recommendedTracks = []; // 곡 정보를 저장하기 위한 빈 배열 초기화
+    var currentTrackIndex = 0; // 현재 재생 중인 곡의 인덱스 초기화
+  
+    // 곡 정보를 가져와서 recommendedTracks 배열을 채우는 함수
+    function populateTracks(tracks) {
+      recommendedTracks = tracks;
+      // 곡이 있으면 첫 번째 곡을 재생
+      if (recommendedTracks.length > 0) {
+        playTrack(recommendedTracks[currentTrackIndex].uri, currentTrackIndex);
+      }
+    }
+  
+    // 곡을 재생하는 함수
+    function playTrack(uri, index) {
+      const modal = document.getElementById("modal");
+      const spotifyIframe = document.getElementById("spotifyIframe");
+      const iframeSrc = 'https://open.spotify.com/embed/track/' + uri.split(':')[2];
+      
+      spotifyIframe.src = iframeSrc;
+      modal.style.display = "block";
+      currentTrackIndex = index;
+    }
+  
+    
+    // 모달 창을 닫는 함수
+    function closeModal() {
+      const modal = document.getElementById("modal");
+      const spotifyIframe = document.getElementById("spotifyIframe");
+      
+      modal.style.display = "none";
+      spotifyIframe.src = "";
+    }
+  </script>
+  
+</body>
+</html>
